@@ -104,11 +104,52 @@
         let tasks = [];
         let taskIdCounter = 0;
 
-        // Load tasks from localStorage
+        // Storage functions that try localStorage first, then cookies
+        function saveData(key, value) {
+            const jsonValue = JSON.stringify(value);
+            
+            // Try localStorage first
+            try {
+                localStorage.setItem(key, jsonValue);
+            } catch (e) {
+                console.log('localStorage failed, using cookies');
+            }
+            
+            // Also save to cookies as backup
+            document.cookie = `${key}=${encodeURIComponent(jsonValue)}; max-age=31536000; path=/; SameSite=Strict`;
+        }
+
+        function loadData(key) {
+            // Try localStorage first
+            try {
+                const localData = localStorage.getItem(key);
+                if (localData) {
+                    return JSON.parse(localData);
+                }
+            } catch (e) {
+                console.log('localStorage read failed, trying cookies');
+            }
+            
+            // Fall back to cookies
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [cookieKey, cookieValue] = cookie.trim().split('=');
+                if (cookieKey === key) {
+                    try {
+                        return JSON.parse(decodeURIComponent(cookieValue));
+                    } catch (e) {
+                        return null;
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        // Load tasks from storage
         function loadTasks() {
-            const saved = localStorage.getItem('checklistTasks');
-            if (saved) {
-                const data = JSON.parse(saved);
+            const data = loadData('checklistTasks');
+            if (data) {
                 tasks = data.tasks || [];
                 taskIdCounter = data.taskIdCounter || 0;
                 
@@ -128,13 +169,13 @@
             }
         }
 
-        // Save tasks to localStorage
+        // Save tasks to storage
         function saveTasks() {
             const data = {
                 tasks: tasks,
                 taskIdCounter: taskIdCounter
             };
-            localStorage.setItem('checklistTasks', JSON.stringify(data));
+            saveData('checklistTasks', data);
         }
 
         function createTaskElement(task) {
