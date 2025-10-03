@@ -104,6 +104,39 @@
         let tasks = [];
         let taskIdCounter = 0;
 
+        // Load tasks from localStorage
+        function loadTasks() {
+            const saved = localStorage.getItem('checklistTasks');
+            if (saved) {
+                const data = JSON.parse(saved);
+                tasks = data.tasks || [];
+                taskIdCounter = data.taskIdCounter || 0;
+                
+                // Render saved tasks
+                tasks.forEach(task => {
+                    const taskElement = createTaskElement(task);
+                    const container = document.getElementById('tasks-container');
+                    if (task.completed) {
+                        // Will be organized properly below
+                        container.appendChild(taskElement);
+                    } else {
+                        container.appendChild(taskElement);
+                    }
+                });
+                
+                organizeTasksInDOM();
+            }
+        }
+
+        // Save tasks to localStorage
+        function saveTasks() {
+            const data = {
+                tasks: tasks,
+                taskIdCounter: taskIdCounter
+            };
+            localStorage.setItem('checklistTasks', JSON.stringify(data));
+        }
+
         function createTaskElement(task) {
             const div = document.createElement('div');
             div.className = 'task-item';
@@ -123,6 +156,7 @@
             if (task) {
                 task.completed = !task.completed;
                 organizeTasksInDOM();
+                saveTasks();
             }
         }
 
@@ -178,11 +212,16 @@
                 const input = document.getElementById('new-task-input');
                 input.value = '';
                 input.focus();
+                
+                saveTasks();
             }
         }
 
         // Set up the new task input
         document.addEventListener('DOMContentLoaded', () => {
+            // Load saved tasks first
+            loadTasks();
+            
             const input = document.getElementById('new-task-input');
             
             input.addEventListener('keydown', (e) => {
